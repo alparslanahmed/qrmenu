@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/app_localizations.dart';
-import 'providers/locale_provider.dart';
-import 'screens/home_screen.dart';
+import 'package:qrmenu/providers/main.dart';
+import 'package:qrmenu/screens/home_screen.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => LocaleProvider(),
+      create: (context) => MainProvider(),
       child: const MyApp(),
     ),
   );
@@ -19,27 +21,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocaleProvider>(
-      builder: (context, localeProvider, child) {
-        return MaterialApp(
-          title: 'Limon Cafe',
-          theme: ThemeData(
-            primarySwatch: Colors.green,
-            fontFamily: 'Roboto',
-          ),
-          locale: localeProvider.locale,
-          supportedLocales: const [
-            Locale('en'),
-            Locale('tr'),
-          ],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-          ],
-          home: const HomeScreen(),
-        );
-      },
+    return MaterialApp(
+      title: 'Enfes Menü',
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        fontFamily: 'Roboto',
+      ),
+      home: const HomeScreen(),
     );
   }
 }

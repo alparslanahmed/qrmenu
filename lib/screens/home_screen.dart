@@ -1,60 +1,68 @@
 // lib/screens/home_screen.dart
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import '../providers/locale_provider.dart';
-import '../l10n/app_localizations.dart';
+import '../models/category.dart';
+import '../providers/main.dart';
 import 'category_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  Uint8List _image = Uint8List(0);
+
+  @override
+  void initState() {
+    super.initState();
+    final mainProvider = Provider.of<MainProvider>(context, listen: false);
+    mainProvider.fetchCategories();
+    mainProvider.getBusiness().then((business) {
+      mainProvider.getImage(business?.logoUrl ?? '').then((image) {
+        setState(() {
+          _image = image;
+        });
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final mainProvider = Provider.of<MainProvider>(context);
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+        child: mainProvider.categories.isEmpty
+            ? Text("Loading...")
+            : SingleChildScrollView(
+                child: Column(
                   children: [
-                    _buildCategoryCard(
-                      context,
-                      'assets/img/food.jpg',
-                      localizations.food,
-                      'food',
-                    ),
-                    _buildCategoryCard(
-                      context,
-                      'assets/img/drinks.jpg',
-                      localizations.drinks,
-                      'drinks',
-                    ),
-                    _buildCategoryCard(
-                      context,
-                      'assets/img/desserts.jpg',
-                      localizations.desserts,
-                      'desserts',
-                    ),
-                    _buildCategoryCard(
-                      context,
-                      'assets/img/coffee.jpg',
-                      localizations.coffee,
-                      'coffee',
+                    _buildHeader(context),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: mainProvider.categories.length,
+                      itemBuilder: (context, index) {
+                        final category = mainProvider.categories[index];
+                        return InkWell(
+                          onTap: () {},
+                          child: _buildCategoryCard(
+                            context,
+                            dotenv.env['API_URL']! + category.imageUrl,
+                            category.name,
+                            category,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -65,38 +73,9 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(
-            'assets/img/logo.png',
-            height: 60,
-          ),
-          _buildLanguageDropdown(context),
+          Image.memory(_image, height: 60),
         ],
       ),
-    );
-  }
-
-  Widget _buildLanguageDropdown(BuildContext context) {
-    return Consumer<LocaleProvider>(
-      builder: (context, localeProvider, child) {
-        return DropdownButton<String>(
-          value: localeProvider.locale.languageCode,
-          items: const [
-            DropdownMenuItem(
-              value: 'en',
-              child: Text('English'),
-            ),
-            DropdownMenuItem(
-              value: 'tr',
-              child: Text('Türkçe'),
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              localeProvider.setLocale(Locale(value));
-            }
-          },
-        );
-      },
     );
   }
 
@@ -104,7 +83,7 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     String imagePath,
     String title,
-    String category,
+    Category category,
   ) {
     return InkWell(
       onTap: () {
@@ -119,10 +98,11 @@ class HomeScreen extends StatelessWidget {
         elevation: 4,
         clipBehavior: Clip.antiAlias,
         child: Stack(
-          fit: StackFit.expand,
+          fit: StackFit.passthrough,
           children: [
-            Image.asset(
+            Image.network(
               imagePath,
+              height: 200,
               fit: BoxFit.cover,
             ),
             Positioned(
