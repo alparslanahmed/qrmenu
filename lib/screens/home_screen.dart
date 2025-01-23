@@ -46,6 +46,7 @@ class HomeScreenState extends State<HomeScreen> {
                     _buildHeader(context),
                     ListView.builder(
                       shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: mainProvider.categories.length,
                       itemBuilder: (context, index) {
                         final category = mainProvider.categories[index];
